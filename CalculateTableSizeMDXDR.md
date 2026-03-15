@@ -25,7 +25,7 @@ This query calculates the estimated log size (in GB) and average entry size (in 
 // Define the base data once to save performance
 let LogData = union withsource=TableName 
     Device*,         // All Defender for Endpoint tables
- //   Email*,          // Defender for Office 365
+    Email*,          // Defender for Office 365
     UrlClickEvents,  // Defender for Office 365 (Safe Links)
     CloudAppEvents   // Defender for Cloud Apps
 | where TableName !startswith "DeviceTvm" // Excludes all tables starting with 'DeviceTvm' (currently not supported for direct log ingestion into datalake)
