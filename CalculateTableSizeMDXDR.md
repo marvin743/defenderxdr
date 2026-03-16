@@ -11,10 +11,10 @@ This query calculates the estimated log size (in GB) and average entry size (in 
 2. Retrieves the **total row count** for the last **30 days** (which is highly optimized and fast since it only queries the database index).
 3. Multiplies the exact 30-day row count by the 1-hour average size to project a highly accurate total volume without exhausting the tenant's resources.
 
-Additionally, this query is highly valuable for determining and planning the expected data volume that will be ingested into a Data Lake (e.g., when configuring continuous raw data export via the Microsoft Defender Streaming API). It includes a dedicated column that automatically calculates the expected compressed size.
+Additionally, this query is highly valuable for determining and planning the expected data volume that will be ingested into a Data Lake.
 
 **Notes & Considerations:**
-* **Estimation Variance:** Please be aware that this calculation is an estimation. While highly accurate due to the exact 30-day row count, the average row size might slightly fluctuate. Real ingestion values and billing sizes in your workspace or Data Lake may vary by approximately +/- 10%.
+* **Estimation Variance:** Please be aware that this calculation is an estimation. While highly accurate due to the exact 30-day row count, the average row size might slightly fluctuate.
 * **Storage Savings:** When planning for Data Lake storage, you can typically factor in a **6:1 data compression rate**. Microsoft automatically applies this 6:1 compression ratio for billing Data Lake storage. The column `DataLakeCompressedGB` reflects this calculation.
 
 #### Risk
