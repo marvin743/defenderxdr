@@ -24,6 +24,7 @@ Running broad queries across multiple extensive tables can consume a significant
 - [Microsoft Sentinel data lake is now generally available (Blog)](https://techcommunity.microsoft.com/blog/microsoft-security-blog/microsoft-sentinel-data-lake-is-now-generally-available/4456342)
 
 ## Defender XDR
+> **WARNING: This query will definitely hit the quota of Advanced Hunting.** Because it calculates the size of every single row over a full 30-day period, it consumes significant CPU resources. You may need to reduce the timeframe (e.g., to 1 or 7 days) and extrapolate the results to avoid being temporarily blocked.
 ```KQL
 // Define the base data once to save performance
 let LogData = union withsource=TableName 
@@ -53,3 +54,38 @@ LogData
     | extend TableName = "--- TOTAL SUM ---"
 )
 | sort by TotalSizeGB desc
+```
+**Note on Extrapolation and Accuracy:**
+To avoid exceeding Advanced Hunting CPU quotas (which can easily happen when analyzing 30 days of uncompressed data at once), this query analyzes a shorter timeframe (e.g., 1 or 7 days) and extrapolates the results to a 30-day period. Because log generation naturally fluctuates due to weekends, patch days, or sporadic events, you can expect an extrapolation variance of approximately 10% to 15% compared to a full 30-day scan. This margin of error is perfectly normal and generally acceptable for initial Data Lake or SIEM storage sizing. Always include a 15-20% buffer in your final calculation.
+```KQL
+// Analyze 7 day to save CPU quota, then extrapolate to 30 days
+let daysToAnalyze = 7;
+let daysToProject = 30;
+let LogData = union withsource=TableName 
+    Device*,         
+    Email*,          
+    UrlClickEvents,  
+    CloudAppEvents   
+| where TableName !startswith "DeviceTvm" 
+| where TimeGenerated > ago(1d) // ONLY look at the last 24 hours
+| project TableName, size = estimate_data_size(*);
+// 1. Calculate stats per table
+LogData
+| summarize 
+    TotalEntries30Days = count() * daysToProject, // Extrapolates entries
+    TotalSizeGB = round((sum(size) * daysToProject) / 1073741824.0, 3),                  
+    DataLakeCompressedGB = round(((sum(size) * daysToProject) / 1073741824.0) / 6.0, 3), 
+    AvgSizeKB = round(avg(size) / 1024.0, 2) // Avg size stays the same                           
+    by TableName
+// Append the grand total row
+| union (
+    LogData
+    | summarize 
+        TotalEntries30Days = count() * daysToProject, 
+        TotalSizeGB = round((sum(size) * daysToProject) / 1073741824.0, 3), 
+        DataLakeCompressedGB = round(((sum(size) * daysToProject) / 1073741824.0) / 6.0, 3),
+        AvgSizeKB = round(avg(size) / 1024.0, 2)
+    | extend TableName = "--- TOTAL SUM (30 Days Extrapolated) ---"
+)
+| sort by TotalSizeGB desc
+```
