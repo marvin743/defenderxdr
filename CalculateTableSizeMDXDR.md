@@ -7,7 +7,7 @@
 This query calculates the estimated log size (in GB) and average entry size (in KB) for Microsoft Defender for Endpoint, Defender for Office 365, and Defender for Cloud Apps tables over the last 30 days. It intentionally excludes `DeviceTvm*` (Threat and Vulnerability Management) tables and provides both a per-table breakdown and a unified grand total. 
 
 **Performance Optimization:** To bypass the strict CPU quotas in Advanced Hunting, this query uses a hybrid calculation approach. Calculating the exact size of every row over 30 days using `estimate_data_size()` is heavily CPU-intensive and will likely crash the query. Instead, this optimized query:
-1. Calculates the **average row size** using only the last **1 hour** of data.
+1. Calculates the **average row size** using only the last **1 hour** of data. Calculates the average row size using only the last 1 hour of data. Run this query during a typical, active time of day to capture a realistic average.
 2. Retrieves the **total row count** for the last **30 days** (which is highly optimized and fast since it only queries the database index).
 3. Multiplies the exact 30-day row count by the 1-hour average size to project a highly accurate total volume without exhausting the tenant's resources.
 
